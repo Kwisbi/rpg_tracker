@@ -1,0 +1,536 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bux Analytics Detailed</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --accent: #00e676; /* Яркий зеленый */
+            --text: #e0e0e0;
+            --gold: #ffca28;
+            --pink: #f50057;
+            --border: #333;
+            /* Цвета для обозначения сайтов в истории */
+            --c1: #ef5350; 
+            --c2: #42a5f5; 
+            --c3: #66bb6a; 
+            --c4: #ab47bc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 10px;
+            padding-bottom: 220px;
+        }
+
+        .container { max-width: 500px; margin: 0 auto; }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        /* Главный прогресс */
+        .header-val { font-size: 2.2rem; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
+        .progress-track { background: #000; height: 12px; border-radius: 6px; margin: 10px 0; overflow: hidden; border: 1px solid #333; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
+
+        /* Сетка ввода */
+        .sites-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .site-block { 
+            background: #2a2a2a; padding: 10px; border-radius: 8px; 
+            border-left: 4px solid #555; position: relative;
+        }
+        /* Цветные метки для инпутов */
+        .sb-1 { border-color: var(--c1); }
+        .sb-2 { border-color: var(--c2); }
+        .sb-3 { border-color: var(--c3); }
+        .sb-4 { border-color: var(--c4); }
+
+        .site-label { font-size: 0.75rem; font-weight: bold; color: #fff; display: block; }
+        .site-total-stat { font-size: 0.65rem; color: #aaa; margin-bottom: 4px; display: block; }
+        
+        .site-input {
+            background: #111; border: 1px solid #444; color: #fff;
+            padding: 8px; border-radius: 6px; font-size: 1rem; width: 100%; box-sizing: border-box;
+        }
+        .site-input:focus { border-color: var(--accent); outline: none; }
+
+        .btn-main {
+            background: var(--accent); color: #000; border: none; padding: 14px;
+            border-radius: 10px; font-weight: 800; width: 100%; cursor: pointer;
+            font-size: 1rem; text-transform: uppercase; margin-top: 10px;
+        }
+
+        /* Стиль истории (НОВОЕ) */
+        .hist-card {
+            background: #252525; border-radius: 10px; padding: 12px; margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+        .hist-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #444; padding-bottom: 8px; margin-bottom: 8px;
+        }
+        .hist-date { font-weight: bold; color: #fff; font-size: 0.9rem; }
+        .hist-tasks { font-size: 0.75rem; color: #888; }
+        
+        .hist-breakdown {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.8rem;
+        }
+        .hb-row { display: flex; justify-content: space-between; }
+        .hb-val { font-weight: bold; }
+        
+        .hist-total {
+            margin-top: 8px; padding-top: 8px; border-top: 1px dashed #444;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .ht-label { font-size: 0.85rem; color: #aaa; }
+        .ht-sum { font-size: 1.1rem; color: var(--accent); font-weight: 800; }
+
+        /* Табы и списки */
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 10px; border-radius: 8px; background: #2c2c2c; color: #888; border: none; min-width: 80px; transition: 0.2s; }
+        .tab-btn.active { background: var(--accent); color: #000; font-weight: bold; }
+
+        .view { display: none; max-height: 500px; overflow-y: auto; }
+        .view.active { display: block; }
+
+        .list-item { 
+            background: #252525; padding: 12px; border-radius: 10px; margin-bottom: 8px;
+            border: 1px solid transparent; 
+        }
+        .item-head { display: flex; justify-content: space-between; font-weight: bold; }
+        .item-joke { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; display: block; }
+
+        /* Девушка */
+        .girl-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(30, 30, 30, 0.98); border-top: 2px solid var(--pink);
+            padding: 15px; z-index: 999; backdrop-filter: blur(10px);
+        }
+        .girl-top { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+        .avatar { font-size: 2.2rem; }
+        .girl-text { font-size: 0.85rem; font-style: italic; color: #f8bbd0; line-height: 1.3; }
+        .girl-btns { display: flex; gap: 6px; }
+        .g-btn { flex: 1; background: #333; color: var(--pink); border: 1px solid var(--pink); padding: 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; }
+        .g-btn:disabled { opacity: 0.4; filter: grayscale(1); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div style="font-size: 0.8rem; color: #888; font-weight: bold;">ОБЩИЙ БАНК</div>
+        <div class="header-val" id="total-money">0 ₽</div>
+        <div style="font-size: 0.8rem; color: #fff;" id="remain-txt">Осталось: 200 000 ₽</div>
+        <div class="progress-track"><div id="main-bar" class="progress-fill"></div></div>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 10px; color:#aaa;">
+            <div style="text-align:center"><b id="val-exp" style="color:#fff; font-size:1rem">0</b><br>XP</div>
+            <div style="text-align:center"><b id="val-lvl" style="color:#fff; font-size:1rem">1</b><br>Уровень</div>
+            <div style="text-align:center"><b id="val-gold" style="color:var(--gold); font-size:1rem">0</b><br>Золото</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem;">Ежедневный отчет</h3>
+        <div class="sites-grid">
+            <div class="site-block sb-1">
+                <span class="site-label" style="color:var(--c1)">Сайт 1</span>
+                <span class="site-total-stat" id="total-s1">Всего: 0 ₽</span>
+                <input type="number" id="site-1" class="site-input" placeholder="0 ₽">
+            </div>
+            <div class="site-block sb-2">
+                <span class="site-label" style="color:var(--c2)">Сайт 2</span>
+                <span class="site-total-stat" id="total-s2">Всего: 0 ₽</span>
+                <input type="number" id="site-2" class="site-input" placeholder="0 ₽">
+            </div>
+            <div class="site-block sb-3">
+                <span class="site-label" style="color:var(--c3)">Сайт 3</span>
+                <span class="site-total-stat" id="total-s3">Всего: 0 ₽</span>
+                <input type="number" id="site-3" class="site-input" placeholder="0 ₽">
+            </div>
+            <div class="site-block sb-4">
+                <span class="site-label" style="color:var(--c4)">Сайт 4</span>
+                <span class="site-total-stat" id="total-s4">Всего: 0 ₽</span>
+                <input type="number" id="site-4" class="site-input" placeholder="0 ₽">
+            </div>
+        </div>
+        <div style="background:#2a2a2a; padding:10px; border-radius:8px; margin-bottom:10px;">
+            <span class="site-label">Кол-во заданий (шт)</span>
+            <input type="number" id="tasks-input" class="site-input" placeholder="Всего заданий за день">
+        </div>
+        <button class="btn-main" onclick="submitReport()">Сохранить день</button>
+    </div>
+
+    <div class="card">
+        <div style="font-size: 0.9rem; color: var(--accent); margin-bottom: 8px; font-weight:bold;">Квесты дня</div>
+        <div id="quest-list"></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="setTab('tab-ach', this)">Достижения</button>
+        <button class="tab-btn" onclick="setTab('tab-hist', this)">История</button>
+        <button class="tab-btn" onclick="setTab('tab-shop', this)">Магазин</button>
+        <button class="tab-btn" onclick="setTab('tab-lvl', this)">Ранги</button>
+    </div>
+
+    <div id="tab-ach" class="view active"></div>
+    
+    <div id="tab-hist" class="view">
+        <div id="history-list"></div>
+        <div style="text-align:center; color:#555; font-size:0.8rem; padding:10px;">
+            История хранит последние 50 записей
+        </div>
+    </div>
+
+    <div id="tab-shop" class="view"></div>
+    <div id="tab-lvl" class="view"></div>
+</div>
+
+<div class="girl-panel">
+    <div class="girl-top">
+        <div class="avatar">👩‍💼</div>
+        <div>
+            <div style="font-size: 0.7rem; font-weight:bold; color:var(--pink)">АССИСТЕНТ</div>
+            <div class="girl-text" id="girl-msg">Не забывай вносить данные каждый вечер! ❤️</div>
+            <div style="font-size: 0.65rem; color:#666; margin-top:2px;">Энергия: <span id="girl-en" style="color:#fff">3/3</span></div>
+        </div>
+    </div>
+    <div class="girl-btns">
+        <button class="g-btn" id="btn-hug" onclick="interact('hug')">Обнять</button>
+        <button class="g-btn" id="btn-nice" onclick="interact('nice')">Комплимент</button>
+        <button class="g-btn" id="btn-gift" onclick="interact('gift')">Подарок (50G)</button>
+    </div>
+</div>
+
+<script>
+    // --- ДАННЫЕ ---
+    let state = {
+        money: 0, tasks: 0, exp: 0, gold: 0,
+        unlockedAch: [], boughtCount: 0,
+        history: [], // Структура: {date, s1, s2, s3, s4, total, tasks}
+        siteTotals: [0, 0, 0, 0], // Накопительный итог по сайтам
+        dailyIds: [], dailyDone: [], lastReset: 0,
+        girlEnergy: 3
+    };
+
+    const QUEST_POOL = [
+        {id:1, t:"20 отжиманий", g:20}, {id:2, t:"10 стр. книги", g:15}, 
+        {id:3, t:"Уборка стола", g:10}, {id:4, t:"5 стаканов воды", g:10},
+        {id:5, t:"Прогулка 15 мин", g:25}, {id:6, t:"План на завтра", g:10},
+        {id:7, t:"Холодный душ", g:30}, {id:8, t:"Гимнастика глаз", g:5},
+        {id:9, t:"Заправить кровать", g:5}, {id:10, t:"Медитация 10 мин", g:20},
+        {id:11, t:"Почистить папку", g:15}, {id:12, t:"Звонок родным", g:20},
+        {id:13, t:"Без сахара", g:40}, {id:14, t:"30 приседаний", g:20},
+        {id:15, t:"Проветрить", g:5}, {id:16, t:"5 англ. слов", g:15},
+        {id:17, t:"Съесть фрукт", g:10}, {id:18, t:"Планка 1 мин", g:15},
+        {id:19, t:"Помыть посуду", g:10}, {id:20, t:"Растяжка", g:15}
+    ];
+
+    const SHOP = [
+        {n:"Кофе", p:15}, {n:"Снэки", p:30}, {n:"Час игр", p:50},
+        {n:"Пицца", p:80}, {n:"Кино", p:100}, {n:"Бургер", p:120},
+        {n:"Выходной", p:300}, {n:"Одежда", p:500}, {n:"Гаджет", p:2000}
+    ];
+
+    const ACHS = [
+        {t:"Первый старт", d:"1 задание", j:"Начало положено."},
+        {t:"Сотка", d:"100₽", j:"На проезд хватит."},
+        {t:"Разгон", d:"50 заданий", j:"Набираем обороты."},
+        {t:"Звон монет", d:"100 золота", j:"Копилка тяжелеет."},
+        {t:"Робот", d:"500 заданий", j:"Рутина затягивает."},
+        {t:"Первая покупка", d:"Купить товар", j:"Порадовать себя."},
+        {t:"Про-кликер", d:"1000 заданий", j:"Мышка скрипит."},
+        {t:"Зарплата", d:"5000₽", j:"Уже что-то серьезное."},
+        {t:"Прокачка", d:"5 уровень", j:"Level Up!"},
+        {t:"Спортсмен", d:"10 квестов", j:"В здоровом теле..."},
+        {t:"Бизнес", d:"10 000₽", j:"Мама гордится."},
+        {t:"Маньяк", d:"2000 заданий", j:"Система в шоке."},
+        {t:"Романтик", d:"5 подарков", j:"Любовь стоит денег."},
+        {t:"Шопоголик", d:"10 покупок", j:"Курьеры знают адрес."},
+        {t:"Сова", d:"Ночной доход", j:"Кто не спит - тот ест."},
+        {t:"Олигарх", d:"5000 золота", j:"Золотая лихорадка."},
+        {t:"Элита", d:"5000 заданий", j:"Топ рейтинга."},
+        {t:"Четверть", d:"50 000₽", j:"Едем дальше."},
+        {t:"Атлет", d:"30 квестов", j:"Сила и воля."},
+        {t:"Босс", d:"10 уровень", j:"Максимальный респект."},
+        {t:"Диверсификация", d:"Доход с 4 сайтов", j:"Яйца в разных корзинах."},
+        {t:"Жирный день", d:"1000₽ за сутки", j:"Хороший улов."},
+        {t:"Коллекционер", d:"20 покупок", j:"Дома склад."},
+        {t:"Банкир", d:"10 000 золота", j:"Открывай свой банк."},
+        {t:"Киборг", d:"10 000 заданий", j:"Ты часть сети."},
+        {t:"Экватор", d:"100 000₽", j:"Половина пути!"},
+        {t:"Казанова", d:"20 подарков", j:"Она твоя навеки."},
+        {t:"Спецназ", d:"50 квестов", j:"Дисциплина."},
+        {t:"Марафонец", d:"7 дней подряд", j:"Ни дня без строчки."},
+        {t:"Снайпер", d:"3000₽ за сутки", j:"В яблочко."},
+        {t:"Инвестор", d:"120 000₽", j:"Деньги делают деньги."},
+        {t:"Гурман", d:"Купить 5 еды", j:"Вкусно поесть - святое."},
+        {t:"Хронос", d:"15 000 заданий", j:"Время под контролем."},
+        {t:"Предвкушение", d:"150 000₽", j:"Цель близка."},
+        {t:"Скрудж", d:"20 000 золота", j:"Купание в монетах."},
+        {t:"Терминатор", d:"20 000 заданий", j:"Hasta la vista."},
+        {t:"Финишная прямая", d:"175 000₽", j:"Поднажми!"},
+        {t:"Сердцеед", d:"50 подарков", j:"Идеальный мужчина."},
+        {t:"Олимпиец", d:"100 квестов", j:"Золотая медаль."},
+        {t:"Сверхчеловек", d:"15 уровень", j:"За пределами возможного."},
+        {t:"Легенда клика", d:"25 000 заданий", j:"Памятник при жизни."},
+        {t:"Без 5 минут", d:"190 000₽", j:"Рукой подать."},
+        {t:"Золотой фонд", d:"50 000 золота", j:"Инфляция не страшна."},
+        {t:"Власть", d:"Скупить всё", j:"Мне нужно больше."},
+        {t:"Машина", d:"5000₽ за сутки", j:"Печатный станок."},
+        {t:"Бесконечность", d:"30 000 заданий", j:"И это не предел."},
+        {t:"Меценат", d:"100 подарков", j:"Щедрость без границ."},
+        {t:"Гуру", d:"200 квестов", j:"Просветление."},
+        {t:"Один шаг", d:"199 999₽", j:"Дыши..."},
+        {t:"ПОБЕДА!", d:"200 000₽", j:"ТЫ СДЕЛАЛ ЭТО! ГЕРОЙ!"}
+    ];
+
+    const LVLS = ["Новичок", "Стажёр", "Фрилансер", "Специалист", "Мастер", "Профи", "Эксперт", "Акула", "Магнат", "Легенда"];
+
+    // --- ЛОГИКА ---
+    function init() {
+        const d = localStorage.getItem('BuxDetailed_v1');
+        if(d) {
+            state = JSON.parse(d);
+            if(!state.siteTotals) state.siteTotals = [0,0,0,0]; // Миграция
+        }
+
+        const now = Date.now();
+        const lastDate = new Date(state.lastReset).toDateString();
+        const today = new Date().toDateString();
+        
+        // Сброс ежедневных квестов (после 4:00)
+        if((lastDate !== today && new Date().getHours() >= 4) || state.dailyIds.length === 0) {
+             refreshQuests();
+             state.lastReset = now;
+             state.girlEnergy = 3; 
+        }
+        
+        render();
+    }
+
+    function refreshQuests() {
+        const mix = [...QUEST_POOL].sort(()=>Math.random()-0.5);
+        state.dailyIds = mix.slice(0,5).map(q=>q.id);
+        state.dailyDone = [];
+        save();
+    }
+
+    function save() { localStorage.setItem('BuxDetailed_v1', JSON.stringify(state)); }
+
+    function submitReport() {
+        const s1 = parseFloat(document.getElementById('site-1').value) || 0;
+        const s2 = parseFloat(document.getElementById('site-2').value) || 0;
+        const s3 = parseFloat(document.getElementById('site-3').value) || 0;
+        const s4 = parseFloat(document.getElementById('site-4').value) || 0;
+        const t = parseInt(document.getElementById('tasks-input').value) || 0;
+        
+        const totalToday = s1 + s2 + s3 + s4;
+
+        if(totalToday <= 0 && t <= 0) {
+            alert("Заполни хотя бы одно поле!"); return;
+        }
+
+        if(confirm(`Вносим в историю?\nСайт 1: ${s1}₽\nСайт 2: ${s2}₽\nСайт 3: ${s3}₽\nСайт 4: ${s4}₽\n\nИтог: ${totalToday}₽`)) {
+            // 1. Общий банк
+            state.money += totalToday;
+            state.tasks += t;
+            
+            // 2. Накопление по сайтам
+            state.siteTotals[0] += s1;
+            state.siteTotals[1] += s2;
+            state.siteTotals[2] += s3;
+            state.siteTotals[3] += s4;
+
+            state.exp += (t * 2) + (totalToday * 0.5);
+            state.gold += Math.floor(totalToday / 10) + Math.floor(t / 5);
+
+            // 3. Запись в историю детально
+            const dateStr = new Date().toLocaleDateString('ru-RU', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
+            
+            state.history.unshift({
+                date: dateStr,
+                s1: s1, s2: s2, s3: s3, s4: s4,
+                total: totalToday,
+                tasks: t
+            });
+            if(state.history.length > 50) state.history.pop(); 
+
+            // Очистка
+            document.getElementById('site-1').value = '';
+            document.getElementById('site-2').value = '';
+            document.getElementById('site-3').value = '';
+            document.getElementById('site-4').value = '';
+            document.getElementById('tasks-input').value = '';
+
+            checkAchs(totalToday);
+            save();
+            render();
+            alert("Запись добавлена в историю!");
+        }
+    }
+
+    function interact(type) {
+        if(state.girlEnergy <= 0) {
+            document.getElementById('girl-msg').innerText = "Я устала, давай завтра? 😴"; return;
+        }
+        if(type === 'gift' && state.gold < 50) { alert("Мало золота!"); return; }
+
+        state.girlEnergy--;
+        const msg = document.getElementById('girl-msg');
+        
+        if(type === 'hug') {
+            state.exp += 30;
+            msg.innerText = "Ммм, спасибо! (+30 XP) 🥰";
+        } else if(type === 'nice') {
+            state.gold += 10;
+            msg.innerText = "Ты умеешь поднять настроение! (+10 G) 😊";
+        } else if(type === 'gift') {
+            state.gold -= 50; state.exp += 150; state.boughtCount++;
+            msg.innerText = "Вау! Это лучший подарок! (+150 XP) 💎";
+        }
+        save(); render();
+    }
+
+    function doQuest(id, g) {
+        if(!state.dailyDone.includes(id)) {
+            state.dailyDone.push(id); state.gold += g; state.exp += 50;
+            save(); render();
+        }
+    }
+
+    function buy(p, n) {
+        if(state.gold >= p) {
+            state.gold -= p; state.boughtCount++;
+            alert(`Куплено: ${n}. Наслаждайся!`); save(); render();
+        } else alert("Не хватает золота!");
+    }
+
+    function checkAchs(todayMoney) {
+        ACHS.forEach((a, i) => {
+            const id = i+1;
+            if(!state.unlockedAch.includes(id)) {
+                let ok = false;
+                if(id===1 && state.tasks>=1) ok=true;
+                if(id===2 && state.money>=100) ok=true;
+                if(id===21 && todayMoney > 0) ok=true; 
+                if(id===50 && state.money>=200000) ok=true;
+                if(state.tasks >= id*20 && id%2!==0) ok=true; 
+                if(state.money >= id*2000 && id%2===0) ok=true;
+
+                if(ok) { state.unlockedAch.push(id); state.gold += 25; }
+            }
+        });
+    }
+
+    function setTab(id, btn) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function render() {
+        const m = state.money;
+        document.getElementById('total-money').innerText = m.toLocaleString() + ' ₽';
+        document.getElementById('remain-txt').innerText = `Осталось: ${Math.max(0, 200000-m).toLocaleString()} ₽`;
+        document.getElementById('main-bar').style.width = Math.min(100, (m/200000)*100) + '%';
+        
+        // Статистика сайтов (над полями ввода)
+        document.getElementById('total-s1').innerText = `Всего: ${state.siteTotals[0].toLocaleString()} ₽`;
+        document.getElementById('total-s2').innerText = `Всего: ${state.siteTotals[1].toLocaleString()} ₽`;
+        document.getElementById('total-s3').innerText = `Всего: ${state.siteTotals[2].toLocaleString()} ₽`;
+        document.getElementById('total-s4').innerText = `Всего: ${state.siteTotals[3].toLocaleString()} ₽`;
+
+        const lvl = Math.min(10, Math.floor(state.exp/2000)+1);
+        document.getElementById('val-lvl').innerText = lvl;
+        document.getElementById('val-exp').innerText = Math.floor(state.exp);
+        document.getElementById('val-gold').innerText = state.gold;
+        document.getElementById('girl-en').innerText = state.girlEnergy + '/3';
+        
+        document.getElementById('btn-hug').disabled = state.girlEnergy <= 0;
+        document.getElementById('btn-nice').disabled = state.girlEnergy <= 0;
+        document.getElementById('btn-gift').disabled = state.girlEnergy <= 0;
+
+        // Квесты
+        const activeQuests = QUEST_POOL.filter(q => state.dailyIds.includes(q.id));
+        document.getElementById('quest-list').innerHTML = activeQuests.map(q => `
+            <div class="list-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px;">
+                <div style="font-size:0.85rem">${q.t} <span style="color:var(--gold); font-size:0.75rem">+${q.g}G</span></div>
+                <button class="g-btn" style="flex:0; min-width:50px; padding:6px;" onclick="doQuest(${q.id}, ${q.g})">
+                    ${state.dailyDone.includes(q.id)?'✓':'Ок'}
+                </button>
+            </div>
+        `).join('');
+
+        // История (ДЕТАЛЬНАЯ)
+        if(state.history.length === 0) {
+            document.getElementById('history-list').innerHTML = '<div style="text-align:center; color:#666; padding:20px">Пока нет записей</div>';
+        } else {
+            document.getElementById('history-list').innerHTML = state.history.map(h => `
+                <div class="hist-card">
+                    <div class="hist-header">
+                        <div class="hist-date">${h.date}</div>
+                        <div class="hist-tasks">${h.tasks} заданий</div>
+                    </div>
+                    <div class="hist-breakdown">
+                        <div class="hb-row"><span style="color:var(--c1)">Сайт 1:</span> <span class="hb-val">${h.s1}</span></div>
+                        <div class="hb-row"><span style="color:var(--c2)">Сайт 2:</span> <span class="hb-val">${h.s2}</span></div>
+                        <div class="hb-row"><span style="color:var(--c3)">Сайт 3:</span> <span class="hb-val">${h.s3}</span></div>
+                        <div class="hb-row"><span style="color:var(--c4)">Сайт 4:</span> <span class="hb-val">${h.s4}</span></div>
+                    </div>
+                    <div class="hist-total">
+                        <span class="ht-label">Итог дня:</span>
+                        <span class="ht-sum">+${h.total} ₽</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Ачивки
+        document.getElementById('tab-ach').innerHTML = ACHS.map((a, i) => {
+            const done = state.unlockedAch.includes(i+1);
+            return `
+                <div class="list-item" style="border-left: 3px solid ${done? 'var(--accent)' : 'transparent'}; opacity: ${done?1:0.4}">
+                    <div class="item-head">
+                        <span>${done?'🏆':'🔒'} ${a.t}</span>
+                    </div>
+                    <div style="font-size:0.8rem; margin-top:3px">${a.d}</div>
+                    <div class="item-joke">${a.j}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Магазин
+        document.getElementById('tab-shop').innerHTML = SHOP.map(s => `
+            <div class="list-item" style="display:flex; justify-content:space-between; align-items:center">
+                <div><b>${s.n}</b><br><span style="color:var(--gold)">${s.p} G</span></div>
+                <button class="g-btn" style="flex:0; padding:6px 12px" onclick="buy(${s.p}, '${s.n}')">Купить</button>
+            </div>
+        `).join('');
+        
+        // Ранги
+        document.getElementById('tab-lvl').innerHTML = LVLS.map((n, i) => `
+            <div class="list-item" style="opacity:${lvl>i?1:0.4}; display:flex; justify-content:space-between;">
+                <b>${i+1}. ${n}</b>
+                <span style="font-size:0.8rem; color:#666">${i*2000} XP</span>
+            </div>
+        `).join('');
+    }
+
+    init();
+</script>
+</body>
+</html>
